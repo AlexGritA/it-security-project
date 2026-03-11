@@ -5,6 +5,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.mindrot.jbcrypt.BCrypt;
 import se.apiva.chatserver.controllers.dao.ApiResponse;
 import se.apiva.chatserver.controllers.dao.LoginRequest;
 import se.apiva.chatserver.daos.UserDAO;
@@ -18,12 +21,14 @@ import java.io.IOException;
 @WebServlet("/api/login")
 public class LoginController extends HttpServlet {
 
+    private static final Logger logger = LogManager.getLogger(LoginController.class);
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        if(!RequestUtils.isContentTypeJson(req, resp)) return;
+        if (!RequestUtils.isContentTypeJson(req, resp)) return;
 
         try {
             // Convert Body in JSON to LoginRequest-object
@@ -33,7 +38,11 @@ public class LoginController extends HttpServlet {
 
             // Handle login
             if (user != null && loginRequest.getPassword() != null) {
-                if (user.getPassword().equals(loginRequest.getPassword())) {
+                //Verify the provided password against the stored BCrypt hash
+                if (BCrypt.checkpw(loginRequest.getPassword(), user.getPassword())) {
+
+                    //Logger info for successful login attempt
+                    logger.info("Successful login for user: " + loginRequest.getUsername());
 
                     // User has provided valid Username and Password - generate JWT-token
                     JwtUtils jwt = new JwtUtils(
@@ -50,9 +59,11 @@ public class LoginController extends HttpServlet {
                             ApiResponse.Status.SUCCESS,
                             jwtToken
                     );
+                    return;
                 }
             }
-
+            //Logger warning for failed login attempt
+            logger.warn("Failed login attempt for username: " + loginRequest.getUsername());
             RequestUtils.sendApiResponse(
                     req,
                     resp,

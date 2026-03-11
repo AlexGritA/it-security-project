@@ -6,6 +6,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import se.apiva.chatserver.controllers.dao.ApiResponse;
 import se.apiva.chatserver.controllers.dao.MessageRequest;
 import se.apiva.chatserver.controllers.dao.MessageResponse;
@@ -23,6 +25,8 @@ import java.util.List;
 
 @WebServlet("/api/message")
 public class MessageController extends HttpServlet {
+
+    private static final Logger logger = LogManager.getLogger(MessageController.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -45,6 +49,9 @@ public class MessageController extends HttpServlet {
         // Validate the token and fetch the username from the Subject
         Claims claims = jwt.verify(jwtToken);
         String username = claims.getSubject();
+
+        // Log when a list of messages has been requested
+        logger.info("Message list requested by: " + username);
 
         // Fetch data from database and send response to user
         resp.setStatus(HttpServletResponse.SC_OK);
@@ -81,6 +88,8 @@ public class MessageController extends HttpServlet {
                     ApiResponse.Status.SUCCESS,
                     "Message created"
             );
+            // Log when a message has been sent
+            logger.info("Message sent from user id: " + messageRequest.getFrom() + " to user id: " + messageRequest.getTo());
 
         } catch (Exception e) {
             RequestUtils.sendApiResponse(

@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.mindrot.jbcrypt.BCrypt;
 import se.apiva.chatserver.controllers.dao.ApiResponse;
 import se.apiva.chatserver.controllers.dao.LoginRequest;
 import se.apiva.chatserver.daos.UserDAO;
@@ -35,7 +36,9 @@ public class RegisterController extends HttpServlet {
             // Save the new User to the database
             User user = new User();
             user.setUsername(loginRequest.getUsername());
-            user.setPassword(loginRequest.getPassword());
+            //Hash the password using BCrypt before storing in database
+            user.setPassword(BCrypt.hashpw(loginRequest.getPassword(), BCrypt.gensalt()));
+
             new UserDAO().save(user);
 
             RequestUtils.sendApiResponse(
@@ -76,8 +79,22 @@ public class RegisterController extends HttpServlet {
         if (loginRequest.getUsername() == null || loginRequest.getUsername().length() < 3){
             return "Username is too short";
         }
-        if (loginRequest.getPassword() == null || loginRequest.getPassword().length() < 8){
-            return "Password is too short";
+        //Validate password
+        String password = loginRequest.getPassword();
+        if (password == null || password.length() < 12) {
+            return "Password must be at least 12 characters long";
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            return "Password must contain at least one uppercase letter";
+        }
+        if (!password.matches(".*[a-z].*")) {
+            return "Password must contain at least one lowercase letter";
+        }
+        if (!password.matches(".*[0-9].*")) {
+            return "Password must contain at least one number";
+        }
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+            return "Password must contain at least one special character";
         }
 
         User user = new UserDAO().getUserByUsername(loginRequest.getUsername());

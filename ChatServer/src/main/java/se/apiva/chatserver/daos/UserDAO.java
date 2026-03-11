@@ -21,7 +21,9 @@ public class UserDAO extends GenericDAO<User, Integer>{
         String hql = "from " + User.class.getSimpleName();
         hql += " where username = \"" + username + "\"";
 
-        Query<User> query = session.createQuery(hql);
+        //Use parameterized query to prevent SQL injection
+        Query<User> query = session.createQuery("from " + User.class.getSimpleName() + " where username = :username");
+        query.setParameter("username", username);
         List<User> users = query.getResultList();
 
         if(users.isEmpty()){

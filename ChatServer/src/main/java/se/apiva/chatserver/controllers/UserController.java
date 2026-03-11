@@ -6,6 +6,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import se.apiva.chatserver.controllers.dao.UserResponse;
 import se.apiva.chatserver.daos.UserDAO;
 import se.apiva.chatserver.models.User;
@@ -18,6 +20,8 @@ import java.util.List;
 
 @WebServlet("/api/user")
 public class UserController extends HttpServlet {
+
+    private static final Logger logger = LogManager.getLogger(UserController.class);
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -45,6 +49,8 @@ public class UserController extends HttpServlet {
         Claims claims = jwt.verify(jwtToken);
         String username = claims.getSubject();
 
+        //Log when a list of users has been requested
+        logger.info("User list requested by: " + username);
         try {
             UserDAO userDAO = new UserDAO();
             UserResponse userResponse = new UserResponse();
