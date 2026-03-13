@@ -8,7 +8,8 @@ import java.util.Base64;
 public class AesUtil {
 
     // AES requires a 16, 24 or 32 byte key
-    private static final String SECRET_KEY = "MySuperSecretKey12345678901234!@";
+    private static final String SECRET_KEY = System.getenv("AES_SECRET");
+
 
     // Encrypt a plaintext message
     public static String encrypt(String plaintext) throws Exception {

@@ -34,8 +34,10 @@ public class MessageController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // User has provided valid Username and Password - generate JWT-token
+        //Read JWT secret from environment variable
+        String jwtSecret = System.getenv("JWT_SECRET");
         JwtUtils jwt = new JwtUtils(
-                "MY_LONG_AND_SECRET_TOKEN_AT_LEAST_192BIT_LONG_TO_BE_SAFE!",
+                jwtSecret,
                 "http://apiva.se",
                 "message-api"
         );
