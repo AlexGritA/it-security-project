@@ -1,5 +1,7 @@
 package se.apiva.chatserver.controllers;
 
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,16 +19,33 @@ import se.apiva.chatserver.utils.RequestUtils;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @WebServlet("/api/login")
 public class LoginController extends HttpServlet {
 
     private static final Logger logger = LogManager.getLogger(LoginController.class);
 
+    //Rate limiter - allows 10 requests per minute
+    private static final Bucket rateLimiter = Bucket.builder()
+            .addLimit(Bandwidth.builder().capacity(10).refillIntervally(10, Duration.ofMinutes(1)).build())
+            .build();
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        //Check rate limit before processing request
+        if (!rateLimiter.tryConsume(1)) {
+            RequestUtils.sendApiResponse(
+                    req,
+                    resp,
+                    429,
+                    ApiResponse.Status.ERROR,
+                    "Too many requests, please try again later"
+            );
+            return;
+        }
 
         if (!RequestUtils.isContentTypeJson(req, resp)) return;
 
