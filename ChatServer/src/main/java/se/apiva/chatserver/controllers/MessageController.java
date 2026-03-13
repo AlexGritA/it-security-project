@@ -15,6 +15,7 @@ import se.apiva.chatserver.daos.MessageDAO;
 import se.apiva.chatserver.daos.UserDAO;
 import se.apiva.chatserver.models.Message;
 import se.apiva.chatserver.models.User;
+import se.apiva.chatserver.utils.AesUtil;
 import se.apiva.chatserver.utils.JwtUtils;
 import se.apiva.chatserver.utils.RequestUtils;
 import tools.jackson.databind.ObjectMapper;
@@ -41,7 +42,7 @@ public class MessageController extends HttpServlet {
 
         // Fetch the token from the Http Header
         String jwtToken = RequestUtils.getJwtToken(req, resp);
-        if(jwtToken == null){
+        if (jwtToken == null) {
             RequestUtils.sendUnauthorizedResponse(req, resp);
             return;
         }
@@ -57,10 +58,21 @@ public class MessageController extends HttpServlet {
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(resp.getWriter(), createMessageResponseForUser(username));
+
+        try {
+            objectMapper.writeValue(resp.getWriter(), createMessageResponseForUser(username));
+        } catch (Exception e) {
+            RequestUtils.sendApiResponse(
+                    req,
+                    resp,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    ApiResponse.Status.ERROR,
+                    "Could not decrypt messages"
+            );
+        }
     }
 
-    @Override
+        @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         if(!RequestUtils.isContentTypeJson(req, resp)) return;
@@ -73,10 +85,12 @@ public class MessageController extends HttpServlet {
 
             // Store message to database
             UserDAO userDAO = new UserDAO();
+            //Encrypt the message before storing in database
+            String encryptedMessage = AesUtil.encrypt(messageRequest.getMessage());
             Message message = new Message(
                     userDAO.findById(messageRequest.getFrom()),
                     userDAO.findById(messageRequest.getTo()),
-                    messageRequest.getMessage()
+                    encryptedMessage
             );
             new MessageDAO().save(message);
 
@@ -146,7 +160,9 @@ public class MessageController extends HttpServlet {
         return null;
     }
 
-    private MessageResponse createMessageResponseForUser(String username){
+    private MessageResponse createMessageResponseForUser(String username) throws Exception {
+
+
 
         User thisUser = new UserDAO().getUserByUsername(username);
         List<Message> messages = new MessageDAO().getMessagesToUser(thisUser);
@@ -154,12 +170,14 @@ public class MessageController extends HttpServlet {
         // Convert from internal model to public message - this is to hide secret data
         MessageResponse messageResponse = new MessageResponse();
         for(Message message : messages){
+            // Decrypt the message before sending to user
+            String decryptedMessage = AesUtil.decrypt(message.getMessage());
             messageResponse.addMessage(
                       message.getTo().getId(),
                       message.getFrom().getId(),
                       message.getTo().getUsername(),
                       message.getFrom().getUsername(),
-                      message.getMessage()
+                    decryptedMessage
             );
         }
 
