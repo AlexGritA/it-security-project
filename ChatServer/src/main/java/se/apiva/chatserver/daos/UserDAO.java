@@ -18,8 +18,6 @@ public class UserDAO extends GenericDAO<User, Integer>{
         }
 
         var session = HibernateUtil.getSessionFactory().openSession();
-        String hql = "from " + User.class.getSimpleName();
-        hql += " where username = \"" + username + "\"";
 
         //Use parameterized query to prevent SQL injection
         Query<User> query = session.createQuery("from " + User.class.getSimpleName() + " where username = :username");

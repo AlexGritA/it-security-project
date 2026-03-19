@@ -56,6 +56,7 @@ public class RegisterController extends HttpServlet {
             // Save the new User to the database
             User user = new User();
             user.setUsername(loginRequest.getUsername());
+
             //Hash the password using BCrypt before storing in database
             user.setPassword(BCrypt.hashpw(loginRequest.getPassword(), BCrypt.gensalt()));
 
@@ -121,7 +122,6 @@ public class RegisterController extends HttpServlet {
         if(user != null){
             return "User already exists";
         }
-
         return null;
     }
 }

@@ -172,7 +172,7 @@ public class MessageController extends HttpServlet {
         // Convert from internal model to public message - this is to hide secret data
         MessageResponse messageResponse = new MessageResponse();
         for(Message message : messages){
-            // Decrypt the message before sending to user
+            //Decrypt the message before sending to user
             String decryptedMessage = AesUtil.decrypt(message.getMessage());
             messageResponse.addMessage(
                       message.getTo().getId(),
